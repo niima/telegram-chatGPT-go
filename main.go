@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/otiai10/openaigo"
 
@@ -53,12 +55,14 @@ func main() {
 
 func getResponse(client *openaigo.Client, text string) (string, error) {
 	request := openaigo.CompletionRequestBody{
-		Model:  "text-davinci-003",
-		Prompt: []string{text},
+		Model:       "text-davinci-003",
+		Prompt:      []string{fmt.Sprintf("User: %s\nBot: ", text)},
+		MaxTokens:   1000,
+		Temperature: 0.5,
 	}
 	response, err := client.Completion(nil, request)
 	if err != nil {
 		return "", err
 	}
-	return response.Choices[0].Text, nil
+	return strings.TrimSpace(response.Choices[0].Text), nil
 }
