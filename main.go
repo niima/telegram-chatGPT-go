@@ -58,7 +58,7 @@ func getResponse(client *openaigo.Client, text string) (string, error) {
 		Model:       "text-davinci-003",
 		Prompt:      []string{fmt.Sprintf("User: %s\nBot: ", text)},
 		MaxTokens:   1000,
-		Temperature: 0.5,
+		Temperature: 0.9,
 	}
 	response, err := client.Completion(nil, request)
 	if err != nil {
