@@ -5,12 +5,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/otiai10/openaigo"
 )
 
+var history sync.Map
+
+const maxHistoryPerUser = 5
+
 func main() {
+
 	client := openaigo.NewClient(os.Getenv("OPENAI_API_KEY"))
 	// Replace with your own bot token
 	botToken := os.Getenv("BOT_TOKEN")
@@ -53,20 +59,49 @@ func main() {
 }
 
 func getResponse(clientID int, client *openaigo.Client, text string) (string, error) {
+	instructions := openaigo.ChatMessage{
+		Role:    "user",
+		Content: "Instructions: Respond with details and use telegram format for code sample responses unless I tell you to do differently.",
+	}
+	var messages []openaigo.ChatMessage
+	messagesHistory, ok := history.Load(clientID)
+	if ok {
+		if chatMessages, ok := messagesHistory.([]openaigo.ChatMessage); ok {
+			maxHistory := len(chatMessages) - maxHistoryPerUser
+			if len(chatMessages) < maxHistory {
+				maxHistory = 0
+			}
+			messages = append(messages, chatMessages[maxHistory:]...)
+		}
+	}
+	messages = append(messages, openaigo.ChatMessage{
+		Role:    "user",
+		Content: text,
+	})
+
+	var messagesWithInstruction []openaigo.ChatMessage
+	messagesWithInstruction = append(messagesWithInstruction, instructions)
+	messagesWithInstruction = append(messagesWithInstruction, messages...)
+
 	request := openaigo.ChatCompletionRequestBody{
-		Model: "gpt-3.5-turbo",
-		Messages: []openaigo.ChatMessage{
-			{Role: "user", Content: "Response in Telegram format with more details unless I tell you to do differently."},
-			{Role: "user", Content: text},
-		},
+		Model:       "gpt-3.5-turbo",
+		Messages:    messagesWithInstruction,
 		MaxTokens:   1000,
 		Temperature: 0.2,
 		User:        strconv.Itoa(clientID),
 	}
+
 	response, err := client.Chat(nil, request)
 	if err != nil {
 		return "", err
 	}
+
+	messages = append(messages, openaigo.ChatMessage{
+		Role:    "system",
+		Content: response.Choices[0].Message.Content,
+	})
+
+	history.Store(clientID, messages)
 
 	return strings.TrimSpace(response.Choices[0].Message.Content), nil
 }
