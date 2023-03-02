@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/otiai10/openaigo"
@@ -39,7 +40,7 @@ func main() {
 		// Get the user's input
 		input := update.Message.Text
 
-		res, err := getResponse(client, input)
+		res, err := getResponse(update.Message.From.ID, client, input)
 		if err != nil {
 			res = err.Error()
 			log.Println(err)
@@ -53,12 +54,16 @@ func main() {
 	}
 }
 
-func getResponse(client *openaigo.Client, text string) (string, error) {
+func getResponse(clientID int, client *openaigo.Client, text string) (string, error) {
 	request := openaigo.CompletionRequestBody{
-		Model:       "text-davinci-003",
-		Prompt:      []string{fmt.Sprintf("User: %s\nBot: ", text)},
+		Model: "gpt-3.5-turbo",
+		Prompt: []string{
+			"Response in Telegram format with more details unless I tell you to do differently.",
+			fmt.Sprintf("User: %s\nSystem: ", text),
+		},
 		MaxTokens:   1000,
-		Temperature: 0.9,
+		Temperature: 0.2,
+		User:        strconv.Itoa(clientID),
 	}
 	response, err := client.Completion(nil, request)
 	if err != nil {
