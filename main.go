@@ -14,6 +14,7 @@ import (
 
 func main() {
 	client := openaigo.NewClient(os.Getenv("OPENAI_API_KEY"))
+	client.BaseURL = "https://api.openai.com/v1/chat"
 	// Replace with your own bot token
 	botToken := os.Getenv("BOT_TOKEN")
 
