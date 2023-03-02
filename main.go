@@ -1,15 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/otiai10/openaigo"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/otiai10/openaigo"
 )
 
 func main() {
@@ -56,19 +54,20 @@ func main() {
 }
 
 func getResponse(clientID int, client *openaigo.Client, text string) (string, error) {
-	request := openaigo.CompletionRequestBody{
+	request := openaigo.ChatCompletionRequestBody{
 		Model: "gpt-3.5-turbo",
-		Prompt: []string{
-			"Response in Telegram format with more details unless I tell you to do differently.",
-			fmt.Sprintf("User: %s\nSystem: ", text),
+		Messages: []openaigo.ChatMessage{
+			{Role: "user", Content: "Response in Telegram format with more details unless I tell you to do differently."},
+			{Role: "user", Content: text},
 		},
 		MaxTokens:   1000,
 		Temperature: 0.2,
 		User:        strconv.Itoa(clientID),
 	}
-	response, err := client.Completion(nil, request)
+	response, err := client.Chat(nil, request)
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(response.Choices[0].Text), nil
+
+	return strings.TrimSpace(response.Choices[0].Message.Content), nil
 }
