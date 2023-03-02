@@ -51,6 +51,7 @@ func main() {
 		}
 		// Send the input back to the user
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, res)
+		msg.ParseMode = tgbotapi.ModeHTML
 		_, err = bot.Send(msg)
 		if err != nil {
 			log.Println(err)
