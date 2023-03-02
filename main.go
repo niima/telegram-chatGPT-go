@@ -62,7 +62,7 @@ func main() {
 func getResponse(clientID int, client *openaigo.Client, text string) (string, error) {
 	instructions := openaigo.ChatMessage{
 		Role:    "user",
-		Content: "Instructions: Respond with details and use telegram format for code sample responses unless I tell you to do differently.",
+		Content: "Instructions: Use telegram HTML format for code sample responses.",
 	}
 	var messages []openaigo.ChatMessage
 	messagesHistory, ok := history.Load(clientID)
