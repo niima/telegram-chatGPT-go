@@ -68,7 +68,7 @@ func getResponse(clientID int, client *openaigo.Client, text string) (string, er
 	if ok {
 		if chatMessages, ok := messagesHistory.([]openaigo.ChatMessage); ok {
 			maxHistory := len(chatMessages) - maxHistoryPerUser
-			if len(chatMessages) < maxHistory {
+			if len(chatMessages) < maxHistoryPerUser {
 				maxHistory = 0
 			}
 			messages = append(messages, chatMessages[maxHistory:]...)
