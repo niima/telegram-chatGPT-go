@@ -37,6 +37,14 @@ func main() {
 
 	// Process updates in a loop
 	for update := range updates {
+		if update.Message.IsCommand() && update.Message.Command() == "reset" {
+			history.Delete(update.Message.From.ID)
+			if err = send(bot, update.Message.Chat.ID, "Done!"); err != nil {
+				log.Println(err)
+			}
+			continue
+		}
+
 		if update.Message == nil {
 			continue
 		}
@@ -44,29 +52,28 @@ func main() {
 		// Get the user's input
 		input := update.Message.Text
 
-		res, err := getResponse(update.Message.From.ID, client, input)
+		res, err := getTextResponse(update.Message.From.ID, client, input)
 		if err != nil {
 			res = err.Error()
 			log.Println(err)
 		}
 		// Send the input back to the user
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, res)
-		msg.ParseMode = tgbotapi.ModeHTML
-		_, err = bot.Send(msg)
-		if err != nil {
+		if err = send(bot, update.Message.Chat.ID, res); err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func getResponse(clientID int, client *openaigo.Client, text string) (string, error) {
-	instructions := openaigo.ChatMessage{
-		Role:    "user",
-		Content: "Instructions: Use telegram HTML format for code sample responses.",
-	}
+func send(bot *tgbotapi.BotAPI, chatID int64, text string) error {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeHTML
+	_, err := bot.Send(msg)
+	return err
+}
+
+func getTextResponse(clientID int, client *openaigo.Client, text string) (string, error) {
 	var messages []openaigo.ChatMessage
-	messagesHistory, ok := history.Load(clientID)
-	if ok {
+	if messagesHistory, ok := history.Load(clientID); ok {
 		if chatMessages, ok := messagesHistory.([]openaigo.ChatMessage); ok {
 			maxHistory := len(chatMessages) - maxHistoryPerUser
 			if len(chatMessages) < maxHistoryPerUser {
@@ -80,13 +87,9 @@ func getResponse(clientID int, client *openaigo.Client, text string) (string, er
 		Content: text,
 	})
 
-	var messagesWithInstruction []openaigo.ChatMessage
-	messagesWithInstruction = append(messagesWithInstruction, instructions)
-	messagesWithInstruction = append(messagesWithInstruction, messages...)
-
 	request := openaigo.ChatCompletionRequestBody{
 		Model:       "gpt-3.5-turbo",
-		Messages:    messagesWithInstruction,
+		Messages:    messages,
 		MaxTokens:   1000,
 		Temperature: 0.2,
 		User:        strconv.Itoa(clientID),
